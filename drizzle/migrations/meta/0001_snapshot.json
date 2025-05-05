@@ -1,0 +1,220 @@
+{
+  "version": "5",
+  "dialect": "mysql",
+  "id": "2f52c4b6-7ce0-4231-bab3-2674490c56a7",
+  "prevId": "4e8ae04b-3082-48ce-be28-d8611a0f5446",
+  "tables": {
+    "other_messages": {
+      "name": "other_messages",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "message_id": {
+          "name": "message_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "sender_email": {
+          "name": "sender_email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "sender_name": {
+          "name": "sender_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "email_subject": {
+          "name": "email_subject",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "email_summary": {
+          "name": "email_summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "extracted_json": {
+          "name": "extracted_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "email_raw": {
+          "name": "email_raw",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "email_date": {
+          "name": "email_date",
+          "type": "datetime",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "inquiry_type": {
+          "name": "inquiry_type",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "is_inquiry": {
+          "name": "is_inquiry",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "other_messages_id": {
+          "name": "other_messages_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "sales_inquiries": {
+      "name": "sales_inquiries",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "message_id": {
+          "name": "message_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "sender_email": {
+          "name": "sender_email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "sender_name": {
+          "name": "sender_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "company_name": {
+          "name": "company_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "mobile_number": {
+          "name": "mobile_number",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "email_subject": {
+          "name": "email_subject",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "email_summary": {
+          "name": "email_summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "extracted_json": {
+          "name": "extracted_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "email_raw": {
+          "name": "email_raw",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "email_date": {
+          "name": "email_date",
+          "type": "datetime",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "inquiry_type": {
+          "name": "inquiry_type",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "is_inquiry": {
+          "name": "is_inquiry",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "sales_inquiries_id": {
+          "name": "sales_inquiries_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    }
+  },
+  "views": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "tables": {},
+    "indexes": {}
+  }
+}
