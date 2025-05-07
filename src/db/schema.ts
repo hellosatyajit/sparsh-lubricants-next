@@ -1,32 +1,183 @@
-import { mysqlTable, varchar, int, boolean, datetime, text } from 'drizzle-orm/mysql-core';
+import {
+  mysqlTable,
+  serial,
+  varchar,
+  text,
+  datetime,
+  date,
+  decimal,
+  int,
+  mysqlEnum,
+  boolean,
+  tinyint
+} from "drizzle-orm/mysql-core";
+import { sql } from "drizzle-orm";
 
-export const salesInquiries = mysqlTable('sales_inquiries', {
-  id: int('id').primaryKey().autoincrement(),
-  message_id: varchar('message_id', { length: 255 }),
-  sender_email: varchar('sender_email', { length: 255 }),
-  sender_name: varchar('sender_name', { length: 255 }),
-  company_name: varchar('company_name', { length: 255 }),
-  mobile_number: varchar('mobile_number', { length: 50 }),
-  email_subject: varchar('email_subject', { length: 255 }),
-  email_summary: text('email_summary'),
-  extracted_json: text('extracted_json'),
-  email_raw: text('email_raw'),
-  email_date: datetime('email_date'),
-  inquiry_type: varchar('inquiry_type', { length: 100 }),
-  inquiry_reason: varchar('inquiry_reason',{ length: 100 }),  
-  is_inquiry: boolean('is_inquiry'),
+// Clients
+export const clients = mysqlTable("clients", {
+  id: serial("id").primaryKey(),
+  firstName: varchar("first_name", { length: 100 }).notNull(),
+  lastName: varchar("last_name", { length: 100 }).notNull(),
+  address: text("address").notNull(),
+  phoneNo: varchar("phone_no", { length: 20 }),
+  email: varchar("email", { length: 100 }).notNull().unique(),
+  createdAt: datetime("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: datetime("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
-export const otherMessages = mysqlTable('other_messages', {
+// Emails
+export const emails = mysqlTable("emails", {
+  id: serial("id").primaryKey(),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  fromEmail: varchar("from_email", { length: 100 }).notNull(),
+  body: text("body").notNull(),
+  status: mysqlEnum("status", ["Inquiry", "Non-Inquiry"]).notNull(),
+  createdAt: datetime("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: datetime("updated_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+// Inquiries
+export const salesInquiries = mysqlTable('sales_inquiries', {
   id: int('id').primaryKey().autoincrement(),
-  message_id: varchar('message_id', { length: 255 }),
-  sender_email: varchar('sender_email', { length: 255 }),
-  sender_name: varchar('sender_name', { length: 255 }),
-  email_subject: varchar('email_subject', { length: 255 }),
-  email_summary: text('email_summary'),
-  extracted_json: text('extracted_json'),
-  email_raw: text('email_raw'),
-  email_date: datetime('email_date'),
-  inquiry_type: varchar('inquiry_type', { length: 100 }),
-  is_inquiry: boolean('is_inquiry'),
+  messageId: varchar('message_id', { length: 255 }),
+  senderEmail: varchar('sender_email', { length: 255 }),
+  senderName: varchar('sender_name', { length: 255 }),
+  companyName: varchar('company_name', { length: 255 }),
+  mobileNumber: varchar('mobile_number', { length: 50 }),
+  emailSubject: varchar('email_subject', { length: 255 }),
+  emailSummary: text('email_summary'),
+  extractedJson: text('extracted_json'),
+  emailRaw: text('email_raw'),
+  emailDate: datetime('email_date'),
+  inquiryType: varchar('inquiry_type', { length: 100 }),
+  isInquiry: tinyint('is_inquiry'),
+  assignedTo: int('assigned_to').references(() => users.id),
+});
+
+
+// Invoices
+export const invoices = mysqlTable("invoices", {
+  id: serial("id").primaryKey(),
+  quotationId: int("quotation_id").notNull(),
+  inquiryId: int("inquiry_id").notNull(),
+  dueDate: date("due_date").notNull(),
+  createdAt: datetime("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: datetime("updated_at").default(sql`CURRENT_TIMESTAMP`),
+  deletedAt: datetime("deleted_at"),
+});
+
+// Logs
+export const logs = mysqlTable("logs", {
+  id: serial("id").primaryKey(),
+  userId: int("user_id").notNull(),
+  action: varchar("action", { length: 100 }).notNull(),
+  recordId: int("record_id").notNull(),
+  previousValue: text("previous_value"),
+  currentValue: text("current_value"),
+  timestamp: datetime("timestamp").default(sql`CURRENT_TIMESTAMP`),
+});
+
+// Mail Accounts
+export const mailAccounts = mysqlTable('mail_accounts', {
+  id: int('id').primaryKey().autoincrement(),
+  email: varchar('email', { length: 100 }).notNull(),
+  appCode: varchar('app_code', { length: 200 }),
+  status: mysqlEnum('status', ['Active', 'Inactive']).notNull(),
+  createdAt: datetime('created_at').default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: datetime('updated_at').default(sql`CURRENT_TIMESTAMP`),
+  deletedAt: datetime('deleted_at'),
+});
+
+// Payments
+export const payments = mysqlTable("payments", {
+  id: serial("id").primaryKey(),
+  invoiceId: int("invoice_id").notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  status: mysqlEnum("status", ["Paid", "Unpaid"]).notNull(),
+  fromAccount: varchar("from_account", { length: 100 }),
+  toAccount: varchar("to_account", { length: 100 }),
+  paymentDate: date("payment_date").notNull(),
+  createdAt: datetime("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: datetime("updated_at").default(sql`CURRENT_TIMESTAMP`),
+  deletedAt: datetime("deleted_at"),
+});
+
+// Quotation Items (deprecated if using quotation_products)
+export const quotationItems = mysqlTable("quotation_items", {
+  id: serial("id").primaryKey(),
+  quotationId: int("quotation_id").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  category: varchar("category", { length: 100 }),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  quantity: int("quantity").notNull(),
+  createdAt: datetime("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: datetime("updated_at").default(sql`CURRENT_TIMESTAMP`),
+  deletedAt: datetime("deleted_at"),
+});
+
+// Quotations
+export const quotations = mysqlTable("quotations", {
+  id: serial("id").primaryKey(),
+  clientId: int("client_id").notNull(),
+  createdBy: int("created_by").notNull(),
+  expiryDate: date("expiry_date").notNull(),
+  createdAt: datetime("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: datetime("updated_at").default(sql`CURRENT_TIMESTAMP`),
+  deletedAt: datetime("deleted_at"),
+});
+
+// Users
+export const users = mysqlTable('users', {
+  id: int('id').primaryKey().autoincrement(),
+  type: mysqlEnum('type', ['Admin', 'Sales', 'Finance']).notNull(),
+  name: varchar('name', { length: 100 }).notNull(),
+  email: varchar('email', { length: 150 }).notNull(),
+  password: varchar('password', { length: 255 }).notNull(),
+  createdAt: datetime('created_at').default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: datetime('updated_at').default(sql`CURRENT_TIMESTAMP`),
+  deletedAt: datetime('deleted_at'),
+});
+
+// Products
+export const products = mysqlTable("products", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  category: varchar("category", { length: 100 }),
+  sku: varchar("sku", { length: 100 }).unique(),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  taxRate: decimal("tax_rate", { precision: 5, scale: 2 }).default(sql`0.00`),
+  createdAt: datetime("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: datetime("updated_at").default(sql`CURRENT_TIMESTAMP`),
+  deletedAt: datetime("deleted_at"),
+});
+
+// Quotation Products (join table)
+export const quotationProducts = mysqlTable("quotation_products", {
+  id: serial("id").primaryKey(),
+  quotationId: int("quotation_id").notNull(),
+  productId: int("product_id").notNull(),
+  qtId: varchar("qt_id", { length: 100 }),
+  quantity: int("quantity").notNull().default(1),
+  unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
+  discount: decimal("discount", { precision: 5, scale: 2 }).default(sql`0.00`),
+  total: decimal("total", { precision: 12, scale: 2 }).notNull(),
+  notes: text("notes"),
+  createdAt: datetime("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: datetime("updated_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+// Other Messages
+export const otherMessages = mysqlTable("other_messages", {
+  id: serial("id").primaryKey(),
+  messageId: varchar("message_id", { length: 255 }),
+  senderEmail: varchar("sender_email", { length: 255 }),
+  senderName: varchar("sender_name", { length: 255 }),
+  emailSubject: varchar("email_subject", { length: 255 }),
+  emailSummary: text("email_summary"),
+  extractedJson: text("extracted_json"),
+  emailRaw: text("email_raw"),
+  emailDate: datetime("email_date"),
+  inquiryType: varchar("inquiry_type", { length: 100 }),
+  isInquiry: boolean("is_inquiry"),
 });
