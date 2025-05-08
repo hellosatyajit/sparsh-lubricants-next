@@ -1,64 +1,46 @@
-// import { db } from '../../db';  // Ensure the path to the database connection is correct
-// import { emails } from '../../db/schema';  // Ensure the path to the schema is correct
-
-// export async function classifyEmail(subject: string, fromEmail: string, body: string, isInquiry: boolean) {
-//   const status = isInquiry ? 'Inquiry' : 'Non-Inquiry';
-
-//   try {
-//     const result = await db.insert(emails).values({
-//       subject,
-//       fromEmail,
-//       body,
-//       status,
-//     });
-
-//     return result;
-//   } catch (error) {
-//     console.error('Error inserting email:', error);
-//     throw new Error('Failed to classify email');
-//   }
-// }
-
-
-import { analyzeEmailContent } from './deepseekAPI';  // Adjust import path
+import { analyzeEmailContent, OtherMessageResponse, SalesInquiryResponse } from './deepseekAPI';
 import { db } from '../../db';
 import { salesInquiries, otherMessages } from '../../db/schema';
+import { is } from 'drizzle-orm';
 
-export async function classifyEmailContent(emailContent: string, emailSubject: string) {
+export async function classifyEmailContent(emailObject: any) {
     try {
-        const analysisResult = await analyzeEmailContent(emailContent, emailSubject);
-        
-        // Assuming `analysisResult` contains the analysis response from Deepseek
-        const { is_inquiry, inquiry_type, inquiry_reason, sender_name, company_name, mobile_number, purpose, key_questions, summary } = analysisResult;
+        let analysisResult = await analyzeEmailContent(emailObject);
 
-        // Example to handle saving the result to DB
-        if (is_inquiry) {
-            // Save as sales inquiry or any other specific inquiry type
-            await db.insert(salesInquiries).values({
-                message_id: 'some-id', // Replace with actual data
-                sender_email: 'sender@example.com', // Replace with actual data
-                sender_name,
-                mobile_number,
-                company_name,
-                email_subject: emailSubject,
-                email_summary: summary,
-                inquiry_type,
-                inquiry_reason,
-                extracted_json: JSON.stringify(analysisResult),
-            });
+        if (analysisResult.isInquiry) {
+            analysisResult = {
+                messageId: analysisResult.messageId,
+                senderEmail: analysisResult.senderEmail,
+                senderName: analysisResult.senderName,
+                companyName: (analysisResult as SalesInquiryResponse).companyName,
+                mobileNumber: (analysisResult as SalesInquiryResponse).mobileNumber,
+                emailSubject: analysisResult.emailSubject,
+                emailSummary: analysisResult.emailSummary,
+                extractedJson: analysisResult.extractedJson,
+                emailRaw: analysisResult.emailRaw,
+                emailDate: new Date(analysisResult.emailDate),
+                inquiryType: analysisResult.inquiryType,
+                isInquiry: analysisResult.isInquiry,
+            } as SalesInquiryResponse;
+            await db.insert(salesInquiries).values(analysisResult as any);
         } else {
-            await db.insert(otherMessages).values({
-                message_id: 'some-id', // Replace with actual data
-                sender_email: 'sender@example.com', // Replace with actual data
-                sender_name,
-                email_subject: emailSubject,
-                email_summary: summary,
-                inquiry_type,
-                extracted_json: JSON.stringify(analysisResult),
-            });
+            analysisResult = {
+                messageId: analysisResult.messageId,
+                senderEmail: analysisResult.senderEmail,
+                senderName: analysisResult.senderName,
+                emailSubject: analysisResult.emailSubject,
+                emailSummary: analysisResult.emailSummary,
+                extractedJson: analysisResult.extractedJson,
+                emailRaw: analysisResult.emailRaw,
+                emailDate: new Date(analysisResult.emailDate),
+                inquiryType: analysisResult.inquiryType,
+                isInquiry: analysisResult.isInquiry,
+            } as OtherMessageResponse;
+            await db.insert(otherMessages).values(analysisResult as any);
         }
+        return analysisResult;
     } catch (error) {
         console.error('Error classifying email:', error);
-        throw new Error('Failed to classify email');
+        return null;
     }
 }

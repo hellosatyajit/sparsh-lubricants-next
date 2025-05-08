@@ -36,25 +36,6 @@ export const emails = mysqlTable("emails", {
   updatedAt: datetime("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
-// Inquiries
-export const salesInquiries = mysqlTable('sales_inquiries', {
-  id: int('id').primaryKey().autoincrement(),
-  messageId: varchar('message_id', { length: 255 }),
-  senderEmail: varchar('sender_email', { length: 255 }),
-  senderName: varchar('sender_name', { length: 255 }),
-  companyName: varchar('company_name', { length: 255 }),
-  mobileNumber: varchar('mobile_number', { length: 50 }),
-  emailSubject: varchar('email_subject', { length: 255 }),
-  emailSummary: text('email_summary'),
-  extractedJson: text('extracted_json'),
-  emailRaw: text('email_raw'),
-  emailDate: datetime('email_date'),
-  inquiryType: varchar('inquiry_type', { length: 100 }),
-  isInquiry: tinyint('is_inquiry'),
-  assignedTo: int('assigned_to').references(() => users.id),
-});
-
-
 // Invoices
 export const invoices = mysqlTable("invoices", {
   id: serial("id").primaryKey(),
@@ -180,4 +161,23 @@ export const otherMessages = mysqlTable("other_messages", {
   emailDate: datetime("email_date"),
   inquiryType: varchar("inquiry_type", { length: 100 }),
   isInquiry: boolean("is_inquiry"),
+});
+
+
+// Inquiries
+export const salesInquiries = mysqlTable('sales_inquiries', {
+  id: int('id').primaryKey().autoincrement(),
+  messageId: varchar('message_id', { length: 255 }),
+  senderEmail: varchar('sender_email', { length: 255 }),
+  senderName: varchar('sender_name', { length: 255 }),
+  companyName: varchar('company_name', { length: 255 }),
+  mobileNumber: varchar('mobile_number', { length: 50 }),
+  emailSubject: varchar('email_subject', { length: 255 }),
+  emailSummary: text('email_summary'),
+  extractedJson: text('extracted_json'),
+  emailRaw: text('email_raw'),
+  emailDate: datetime('email_date'),
+  inquiryType: varchar('inquiry_type', { length: 100 }),
+  isInquiry: tinyint('is_inquiry'),
+  assignedTo: int('assigned_to').references(() => users.id),
 });

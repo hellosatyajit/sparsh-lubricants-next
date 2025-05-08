@@ -2,14 +2,14 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { db } from "@/db";
 import { salesInquiries } from "@/db/schema";
 import { getToken } from "next-auth/jwt";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 
 const ITEMS_PER_PAGE = 10;
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { method } = req;
   const session = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-  
+
   if (!session) {
     return res.status(401).json({ message: "Unauthorized" });
   }
@@ -23,19 +23,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const baseQuery = session.type !== "Admin"
           ? db.select().from(salesInquiries)
           : db.select().from(salesInquiries).where(
-              eq(salesInquiries.assignedTo, parseInt(session.id))
-            );
+            eq(salesInquiries.assignedTo, parseInt(session.id))
+          );
 
         const totalItems = await baseQuery.execute();
 
         const paginatedQuery = session.type === "Admin"
-          ? db.select().from(salesInquiries).limit(ITEMS_PER_PAGE).offset(offset)
+          ? db.select().from(salesInquiries).limit(ITEMS_PER_PAGE).offset(offset).orderBy(desc(salesInquiries.emailDate))
           : db
-              .select()
-              .from(salesInquiries)
-              .where(eq(salesInquiries.assignedTo, parseInt(session.id)))
-              .limit(ITEMS_PER_PAGE)
-              .offset(offset);
+            .select()
+            .from(salesInquiries)
+            .where(eq(salesInquiries.assignedTo, parseInt(session.id)))
+            .limit(ITEMS_PER_PAGE)
+            .offset(offset)
+            .orderBy(desc(salesInquiries.emailDate));
 
         const items = await paginatedQuery.execute();
 

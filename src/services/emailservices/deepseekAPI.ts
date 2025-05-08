@@ -26,16 +26,32 @@ export interface DeepSeekAPIResponse {
   system_fingerprint: string;
 }
 
-export interface ClassifiedEmailResponse {
-  is_inquiry: boolean;
-  inquiry_type: 'sales' | 'support' | 'general' | 'other';
-  inquiry_reason: string;
-  sender_name: string;
-  company_name: string | null;
-  mobile_number: string | null;
-  purpose: string;
-  key_questions: string[];
-  summary: string;
+export interface OtherMessageResponse {
+  messageId: string;
+  senderEmail: string;
+  senderName: string;
+  emailSubject: string;
+  emailSummary: string;
+  extractedJson: string;
+  emailRaw: string;
+  emailDate: string | Date;
+  inquiryType: number;
+  isInquiry: number;
+}
+
+export type SalesInquiryResponse = {
+  messageId: string;
+  senderEmail: string;
+  senderName: string;
+  companyName: string;
+  mobileNumber: string;
+  emailSubject: string;
+  emailSummary: string;
+  extractedJson: string;
+  emailRaw: string;
+  emailDate: string | Date;
+  inquiryType: string;
+  isInquiry: number;
 }
 
 const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
@@ -43,26 +59,44 @@ const DEEPSEEK_API_KEY = 'sk-f04e4da6abde41f8967811a97fa693b8';  // Replace with
 
 // Function to analyze email content with DeepSeek API
 export async function analyzeEmailContent(
-  emailContent: string,
-  emailSubject: string
-): Promise<ClassifiedEmailResponse> {  // Change the return type to ClassifiedEmailResponse
+  emailObject: any,
+): Promise<OtherMessageResponse | SalesInquiryResponse> {  // Change the return type to ClassifiedEmailResponse
   const prompt = `
-    Analyze this email and determine if it's a sales inquiry or other type of message. 
-    Return JSON with these fields:
-    {
-        "is_inquiry": boolean,
-        "inquiry_type": "sales|support|general|other",
-        "inquiry_reason": "reason for classification",
-        "sender_name": "if inquiry, extracted name",
-        "company_name": "if inquiry, extracted company",
-        "mobile_number": "if inquiry, extracted phone",
-        "purpose": "if inquiry, main purpose",
-        "key_questions": ["if inquiry, list of questions"],
-        "summary": "if inquiry, 3-4 sentence summary"
-    }
+Analyze this email and determine if it's a sales inquiry or other type of message. 
 
-    Email Subject: ${emailSubject}
-    Email Content: ${emailContent}
+Return JSON with these fields:
+
+If non-sales inquirn mail
+{
+  messageId: varchar("message_id", { length: 255 }),
+  senderEmail: varchar("sender_email", { length: 255 }),
+  senderName: varchar("sender_name", { length: 255 }),
+  emailSubject: varchar("email_subject", { length: 255 }),
+  emailSummary: text("email_summary"),
+  extractedJson: text("extracted_json"),
+  emailRaw: text("email_raw"),
+  emailDate: datetime("email_date"), // As ISO string
+  inquiryType: varchar("inquiry_type", { length: 100 }),
+  isInquiry: boolean("is_inquiry"),
+}
+
+If sales inquiry mail
+{
+  messageId: varchar('message_id', { length: 255 }),
+  senderEmail: varchar('sender_email', { length: 255 }),
+  senderName: varchar('sender_name', { length: 255 }),
+  companyName: varchar('company_name', { length: 255 }),
+  mobileNumber: varchar('mobile_number', { length: 50 }),
+  emailSubject: varchar('email_subject', { length: 255 }),
+  emailSummary: text('email_summary'),
+  extractedJson: text('extracted_json'),
+  emailRaw: text('email_raw'),
+  emailDate: datetime('email_date'), // As ISO string
+  inquiryType: varchar('inquiry_type', { length: 100 }),
+  isInquiry: tinyint('is_inquiry'),
+}
+
+    Email Object from IMAP: ${JSON.stringify(emailObject, null, 2)}
     
     Return ONLY the JSON object.
   `;
@@ -100,7 +134,7 @@ export async function analyzeEmailContent(
       const cleanedResponse = messageContent.replace(/```json|```/g, '').trim();
 
       // Try to parse the cleaned response as JSON
-      const analysisResult: ClassifiedEmailResponse = JSON.parse(cleanedResponse);
+      const analysisResult = JSON.parse(cleanedResponse);
 
       return analysisResult;  // Return the ClassifiedEmailResponse type
     }

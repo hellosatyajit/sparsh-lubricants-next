@@ -206,7 +206,7 @@ export default function MailAccounts({ mailAccounts }: PageProps) {
                                     <TableRow key={account.id}>
                                         <TableCell className="pl-4">{account.email}</TableCell>
                                         <TableCell>{account.status}</TableCell>
-                                        <TableCell className="capitalize">{account.appCode}</TableCell>
+                                        <TableCell>{account.appCode}</TableCell>
                                         <TableCell>
                                             <div className="flex gap-2">
                                                 <Button variant="outline" size="sm" onClick={() => handleEdit(account)}>
