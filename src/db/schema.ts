@@ -84,28 +84,7 @@ export const payments = mysqlTable("payments", {
 });
 
 // Quotation Items (deprecated if using quotation_products)
-export const quotationItems = mysqlTable("quotation_items", {
-  id: serial("id").primaryKey(),
-  quotationId: int("quotation_id").notNull(),
-  name: varchar("name", { length: 255 }).notNull(),
-  category: varchar("category", { length: 100 }),
-  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
-  quantity: int("quantity").notNull(),
-  createdAt: datetime("created_at").default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: datetime("updated_at").default(sql`CURRENT_TIMESTAMP`),
-  deletedAt: datetime("deleted_at"),
-});
 
-// Quotations
-export const quotations = mysqlTable("quotations", {
-  id: serial("id").primaryKey(),
-  clientId: int("client_id").notNull(),
-  createdBy: int("created_by").notNull(),
-  expiryDate: date("expiry_date").notNull(),
-  createdAt: datetime("created_at").default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: datetime("updated_at").default(sql`CURRENT_TIMESTAMP`),
-  deletedAt: datetime("deleted_at"),
-});
 
 // Users
 export const users = mysqlTable('users', {
@@ -132,22 +111,7 @@ export const products = mysqlTable("products", {
   updatedAt: datetime("updated_at").default(sql`CURRENT_TIMESTAMP`),
   deletedAt: datetime("deleted_at"),
 });
-
 // Quotation Products (join table)
-export const quotationProducts = mysqlTable("quotation_products", {
-  id: serial("id").primaryKey(),
-  quotationId: int("quotation_id").notNull(),
-  productId: int("product_id").notNull(),
-  qtId: varchar("qt_id", { length: 100 }),
-  quantity: int("quantity").notNull().default(1),
-  unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
-  discount: decimal("discount", { precision: 5, scale: 2 }).default(sql`0.00`),
-  total: decimal("total", { precision: 12, scale: 2 }).notNull(),
-  notes: text("notes"),
-  createdAt: datetime("created_at").default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: datetime("updated_at").default(sql`CURRENT_TIMESTAMP`),
-});
-
 // Other Messages
 export const otherMessages = mysqlTable("other_messages", {
   id: serial("id").primaryKey(),
@@ -180,4 +144,51 @@ export const salesInquiries = mysqlTable('sales_inquiries', {
   inquiryType: varchar('inquiry_type', { length: 100 }),
   isInquiry: tinyint('is_inquiry'),
   assignedTo: int('assigned_to').references(() => users.id),
+});
+
+
+
+// Quotations Table
+export const quotations = mysqlTable("quotations", {
+  id: serial("id").primaryKey(),
+  clientId: int("client_id").notNull(),
+  createdBy: int("created_by").notNull(),
+  expiryDate: date("expiry_date").notNull(),
+  totalAmount: decimal("total_amount", { precision: 12, scale: 2 }).notNull(),
+  status: varchar("status", { length: 50 }).notNull().default('Pending'),
+  createdAt: datetime("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: datetime("updated_at").default(sql`CURRENT_TIMESTAMP`),
+  deletedAt: datetime("deleted_at"),
+});
+
+// Quotation Items Table
+export const quotationTemplatesProducts = mysqlTable("quotation_templates_products", {
+  id: serial("id").primaryKey(), // Auto-incremented ID
+  quotationTemplateId: int("quotation_template_id").notNull(), // Foreign key referencing the quotation_template table
+  name: varchar("name", { length: 255 }).notNull(), // Name of the product in the template
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(), // Price of the product
+  quantity: int("quantity").notNull(), // Quantity of the product in the template
+  createdAt: datetime("created_at").default(sql`CURRENT_TIMESTAMP`), // Timestamp for creation
+  updatedAt: datetime("updated_at").default(sql`CURRENT_TIMESTAMP`), // Timestamp for updates
+  deletedAt: datetime("deleted_at"), // Timestamp for soft deletion
+});
+export const quotationProducts = mysqlTable("quotation_products", {
+  id: serial("id").primaryKey(),
+  quotationId: int("quotation_id").notNull(),
+  productId: int("product_id").notNull(),
+  quantity: int("quantity").notNull().default(1),
+  unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
+  discount: decimal("discount", { precision: 5, scale: 2 }),
+  total: decimal("total", { precision: 12, scale: 2 }).notNull(),
+  notes: text("notes"),
+  createdAt: datetime("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: datetime("updated_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const quotationTemplate = mysqlTable("quotation_template", {
+  id: serial("id").primaryKey(), // Auto-incremented ID
+  name: varchar("name", { length: 255 }).notNull(), // Name of the template
+  createdAt: datetime("created_at").default(sql`CURRENT_TIMESTAMP`), // Timestamp for creation
+  updatedAt: datetime("updated_at").default(sql`CURRENT_TIMESTAMP`), // Timestamp for updates
+  deletedAt: datetime("deleted_at"), // Timestamp for soft deletion
 });
