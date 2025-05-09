@@ -130,6 +130,7 @@ If sales inquiry mail
     const messageContent = responseData?.choices?.[0]?.message?.content;
 
     if (messageContent) {
+      console.log('DeepSeek API Response:', messageContent);
       // Remove any extraneous backticks or markdown-style formatting from the response
       const cleanedResponse = messageContent.replace(/```json|```/g, '').trim();
 
