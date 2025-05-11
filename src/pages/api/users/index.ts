@@ -1,9 +1,7 @@
-// /pages/api/products/index.ts
-
 import { NextApiRequest, NextApiResponse } from 'next';
 import { db } from '@/db';
 import { users } from '@/db/schema';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { isNull } from 'drizzle-orm';
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { method } = req;

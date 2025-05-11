@@ -2,7 +2,7 @@
 import CredentialsProvider from "next-auth/providers/credentials";
 import { db } from "@/db";
 import { users } from "@/db/schema";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 
 export const authProviders = [
