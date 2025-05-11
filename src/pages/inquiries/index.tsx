@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Head from "next/head";
 import { Button } from "../../components/ui/button";
 import {
@@ -39,13 +39,15 @@ import {
 } from "../../components/ui/select";
 import AppLayout from "../../layouts/app-layout";
 import { BreadcrumbItem } from "../../types";
-import { ChevronLeftIcon, ChevronRightIcon, Loader2 } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, Loader2, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useSession } from "next-auth/react";
 import { Badge } from "../../components/ui/badge";
 import { Card } from "../../components/ui/card";
+import useSWR from 'swr';
+import { fetcher, swrConfig } from '@/lib/swr';
 
 const inquirySchema = z.object({
     id: z.number().optional(),
@@ -88,9 +90,27 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function Inquiries({ inquiries, users }: Props) {
+export default function Inquiries() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const page = Number(searchParams.get('page') ?? 1);
     const { data: session } = useSession();
+    const [isRefreshing, setIsRefreshing] = useState(false);
+
+    const { data: inquiriesData, error: inquiriesError, mutate: mutateInquiries } = useSWR<PaginatedData<Inquiry>>(
+        `/api/inquiries?page=${page}`,
+        fetcher,
+        swrConfig
+    );
+    const { data: usersData, error: usersError } = useSWR<{ data: { id: number; name: string }[] }>(
+        `/api/users`,
+        fetcher,
+        swrConfig
+    );
+
+    const inquiries = inquiriesData || { data: [], current_page: 1, last_page: 1, total: 0, from: 0, to: 0 };
+    const users = usersData?.data || [];
+
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [selectedInquiry, setSelectedInquiry] = useState<Inquiry | null>(null);
@@ -98,31 +118,25 @@ export default function Inquiries({ inquiries, users }: Props) {
 
     const form = useForm<Inquiry>({
         resolver: zodResolver(inquirySchema),
+        defaultValues: {
+            assignedTo: undefined,
+            emailSummary: '',
+        },
     });
-
 
     const onSubmit = async (data: Inquiry) => {
         try {
             setIsLoading(true);
-            // Clean up the data before sending
-            const cleanData = {
-                ...data,
-                emailDate: data.emailDate || null,
-                assignedTo: data.assignedTo || null,
-            };
-
-            const url = `/api/inquiries/${selectedInquiry!.id}`;
-            const response = await fetch(url, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(cleanData),
+            const response = await fetch(`/api/inquiries/${selectedInquiry?.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
             });
-
             if (response.ok) {
                 setIsEditOpen(false);
                 setSelectedInquiry(null);
                 form.reset();
-                router.refresh();
+                mutateInquiries();
             }
         } catch (error) {
             console.error("Error updating inquiry:", error);
@@ -133,23 +147,24 @@ export default function Inquiries({ inquiries, users }: Props) {
 
     const handleEdit = (inquiry: Inquiry) => {
         setSelectedInquiry(inquiry);
-        form.reset(inquiry);
+        form.reset({
+            assignedTo: inquiry.assignedTo,
+            emailSummary: inquiry.emailSummary || '',
+        });
         setIsEditOpen(true);
     };
 
     const handleDelete = async () => {
-        if (!selectedInquiry) return;
-
+        if (!selectedInquiry?.id) return;
         try {
             setIsLoading(true);
             const response = await fetch(`/api/inquiries/${selectedInquiry.id}`, {
-                method: "DELETE",
+                method: 'DELETE',
             });
-
             if (response.ok) {
                 setIsDeleteOpen(false);
                 setSelectedInquiry(null);
-                router.refresh();
+                mutateInquiries();
             }
         } catch (error) {
             console.error("Error deleting inquiry:", error);
@@ -158,18 +173,55 @@ export default function Inquiries({ inquiries, users }: Props) {
         }
     };
 
-    const handlePageChange = (page: number) => {
-        router.push(`/inquiries?page=${page}`);
+    const handlePageChange = (newPage: number) => {
+        router.push(`/inquiries?page=${newPage}`);
     };
 
     const getAssignedUserName = (userId: number | undefined) => {
-        if (!userId) return "Not Assigned";
-        const user = users.find(u => u.id === userId);
+        const user = users.find((u: { id: number; name: string }) => u.id === userId);
         return user ? user.name : "Unknown User";
     };
 
+    const handleRefresh = async () => {
+        try {
+            setIsRefreshing(true);
+            const response = await fetch(`/api/mails/latest`, {
+                method: 'POST',
+            });
+            if (response.ok) {
+                mutateInquiries();
+            }
+        } catch (error) {
+            console.error("Error refreshing inquiries:", error);
+        } finally {
+            setIsRefreshing(false);
+        }
+    };
+
+    if (inquiriesError || usersError) {
+        return <div>Error loading data</div>;
+    }
+
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout breadcrumbs={breadcrumbs} cta={session?.user?.type === "Admin" && (
+                <Button
+                    variant="outline"
+                    onClick={handleRefresh}
+                    disabled={isRefreshing}
+                >
+                    {isRefreshing ? (
+                        <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Refreshing...
+                        </>
+                    ) : (
+                        <>
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                            Refresh Inquiries
+                        </>
+                    )}
+                </Button>
+        )}>
             <div className="mx-auto w-full max-w-7xl p-2 sm:p-6 lg:p-8">
                 <div className="rounded-lg border bg-white">
                     <Table>
@@ -177,7 +229,7 @@ export default function Inquiries({ inquiries, users }: Props) {
                             <TableRow>
                                 <TableHead>Name</TableHead>
                                 <TableHead>Email</TableHead>
-                                <TableHead>Subject</TableHead>
+                                <TableHead className="max-w-52">Subject</TableHead>
                                 <TableHead>Company</TableHead>
                                 <TableHead>Assigned To</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
@@ -188,7 +240,9 @@ export default function Inquiries({ inquiries, users }: Props) {
                                 <TableRow key={inquiry.id}>
                                     <TableCell className="font-medium">{inquiry.senderName}</TableCell>
                                     <TableCell>{inquiry.senderEmail}</TableCell>
-                                    <TableCell>{inquiry.emailSubject}</TableCell>
+                                    <TableCell className="max-w-52 truncate" title={inquiry.emailSubject || ''}>
+                                        {inquiry.emailSubject}
+                                    </TableCell>
                                     <TableCell>{inquiry.companyName || "-"}</TableCell>
                                     <TableCell>
                                         <Badge variant={inquiry.assignedTo ? "default" : "secondary"}>
@@ -348,31 +402,4 @@ export default function Inquiries({ inquiries, users }: Props) {
             </Dialog>
         </AppLayout>
     );
-}
-
-export async function getServerSideProps(context: any) {
-    const [inquiriesRes, usersRes] = await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/inquiries?page=${context.query.page || 1}`, {
-            headers: {
-                cookie: context.req.headers.cookie!,
-            },
-        }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users`, {
-            headers: {
-                cookie: context.req.headers.cookie!,
-            },
-        }),
-    ]);
-
-    const [inquiries, users] = await Promise.all([
-        inquiriesRes.json(),
-        usersRes.json(),
-    ]);
-
-    return {
-        props: {
-            inquiries,
-            users: users.data,
-        },
-    };
 }

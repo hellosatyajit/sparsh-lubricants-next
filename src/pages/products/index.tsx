@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Head from "next/head";
 import { Button } from "../../components/ui/button";
 import {
@@ -35,6 +35,8 @@ import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import useSWR from 'swr';
+import { fetcher, swrConfig } from '@/lib/swr';
 
 const productSchema = z.object({
   id: z.number().optional(),
@@ -67,8 +69,17 @@ const breadcrumbs: BreadcrumbItem[] = [
   },
 ];
 
-export default function Products({ products }: Props) {
+export default function Products() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const page = Number(searchParams.get('page') ?? 1);
+
+  const { data: productsData, error, mutate: mutateProducts } = useSWR<PaginatedData<Product>>(
+    `/api/products?page=${page}`,
+    fetcher,
+    swrConfig
+  );
+
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -96,36 +107,34 @@ export default function Products({ products }: Props) {
     }
   }, [isAddOpen]);
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: Product) => {
     try {
       if (selectedProduct) {
         const response = await fetch(`/api/products/${selectedProduct.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
         });
-
         if (response.ok) {
           setIsEditOpen(false);
           setSelectedProduct(null);
           form.reset();
-          router.refresh();
+          mutateProducts();
         }
       } else {
-        const response = await fetch("/api/products", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+        const response = await fetch(`/api/products`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
         });
-
         if (response.ok) {
           setIsAddOpen(false);
           form.reset();
-          router.refresh();
+          mutateProducts();
         }
       }
     } catch (error) {
-      console.error("Error submitting form:", error);
+      console.error(error);
     }
   };
 
@@ -138,21 +147,20 @@ export default function Products({ products }: Props) {
   const handleDelete = async (id: number) => {
     try {
       const response = await fetch(`/api/products/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
       });
-
       if (response.ok) {
         setIsDeleteOpen(false);
         setSelectedProduct(null);
-        router.refresh();
+        mutateProducts();
       }
     } catch (error) {
-      console.error("Error deleting product:", error);
+      console.error(error);
     }
   };
 
-  const handlePageChange = (page: number) => {
-    router.push(`/products?page=${page}`);
+  const handlePageChange = (newPage: number) => {
+    router.push(`/products?page=${newPage}`);
   };
 
   const AddProductDialog = () => (
@@ -204,6 +212,12 @@ export default function Products({ products }: Props) {
     </Dialog>
   );
 
+  if (error) {
+    return <div>Error loading products</div>;
+  }
+
+  const products = productsData?.data || [];
+
   return (
     <AppLayout breadcrumbs={breadcrumbs} cta={<AddProductDialog />}>
       <Head>
@@ -222,7 +236,7 @@ export default function Products({ products }: Props) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {products.data.map((product) => (
+              {products.map((product) => (
                 <TableRow key={product.id}>
                   <TableCell className="pl-4">{product.name}</TableCell>
                   <TableCell>{product.category}</TableCell>
@@ -232,7 +246,7 @@ export default function Products({ products }: Props) {
                   >
                     {product.description}
                   </TableCell>
-                  <TableCell>${Number(product.price).toFixed(2)}</TableCell>
+                  <TableCell>₹{Number(product.price).toFixed(2)}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
                       <Button
@@ -284,30 +298,30 @@ export default function Products({ products }: Props) {
           </Table>
         </div>
 
-        {products.last_page > 1 && (
+        {(productsData?.last_page && productsData.last_page > 1) && (
           <div className="flex items-center justify-between border-t px-4 py-3">
             <div>
               <p className="text-sm text-gray-700">
-                Showing <span className="font-medium">{products.from}</span> to{" "}
-                <span className="font-medium">{products.to}</span> of{" "}
-                <span className="font-medium">{products.total}</span> results
+                Showing <span className="font-medium">{productsData.from}</span> to{" "}
+                <span className="font-medium">{productsData.to}</span> of{" "}
+                <span className="font-medium">{productsData.total}</span> results
               </p>
             </div>
             <div className="flex gap-1">
               <Button
                 variant="outline"
                 size="icon"
-                disabled={products.current_page === 1}
-                onClick={() => handlePageChange(products.current_page - 1)}
+                disabled={productsData.current_page === 1}
+                onClick={() => handlePageChange(productsData.current_page - 1)}
               >
                 <ChevronLeftIcon />
               </Button>
-              {Array.from({ length: products.last_page }, (_, i) => i + 1).map(
+              {Array.from({ length: productsData.last_page }, (_, i) => i + 1).map(
                 (page) => (
                   <Button
                     key={page}
                     variant={
-                      page === products.current_page ? "default" : "outline"
+                      page === productsData.current_page ? "default" : "outline"
                     }
                     size="icon"
                     onClick={() => handlePageChange(page)}
@@ -319,8 +333,8 @@ export default function Products({ products }: Props) {
               <Button
                 variant="outline"
                 size="icon"
-                disabled={products.current_page === products.last_page}
-                onClick={() => handlePageChange(products.current_page + 1)}
+                disabled={productsData.current_page === productsData.last_page}
+                onClick={() => handlePageChange(productsData.current_page + 1)}
               >
                 <ChevronRightIcon />
               </Button>
@@ -373,16 +387,4 @@ export default function Products({ products }: Props) {
       </Dialog>
     </AppLayout>
   );
-}
-
-export async function getServerSideProps({ params }: any) {
-  const products = await fetch(
-    `http://localhost:3000/api/products?page=${params?.page ?? 1}`
-  ).then((res) => res.json());
-
-  return {
-    props: {
-      products,
-    },
-  };
 }

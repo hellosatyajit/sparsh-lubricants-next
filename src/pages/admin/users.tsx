@@ -7,6 +7,8 @@ import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import useSWR from 'swr';
+import { fetcher, swrConfig } from '@/lib/swr';
 
 import { Button } from "@/components/ui/button";
 import {
@@ -54,18 +56,20 @@ const userSchema = z.object({
 
 type UserFormValues = z.infer<typeof userSchema>;
 
-
-interface PageProps {
-  data: UserFormValues[];
-}
-
-export default function AdminUsersPage({ users }: { users: PageProps }) {
+export default function AdminUsersPage() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserFormValues | null>(null);
 
   const router = useRouter();
+  const { data: usersData, error, mutate: mutateUsers } = useSWR<{ data: UserFormValues[] }>(
+    `/api/users`,
+    fetcher,
+    swrConfig
+  );
+
+  const users = usersData || { data: [] };
 
   const form = useForm<UserFormValues>({
     resolver: zodResolver(userSchema),
@@ -86,31 +90,29 @@ export default function AdminUsersPage({ users }: { users: PageProps }) {
 
   const onSubmit = async (data: UserFormValues) => {
     try {
-      let response;
       if (selectedUser) {
-        const updatedData = { ...data };
-        if (!updatedData.password) {
-          delete updatedData.password;
-        }
-
-        response = await fetch(`/api/users/${selectedUser.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updatedData),
-        });
-      } else {
-        response = await fetch("/api/users", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+        const response = await fetch(`/api/users/${selectedUser.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
         });
-      }
-      if (response.ok) {
-        setIsEditOpen(false);
-        setIsAddOpen(false);
-        setSelectedUser(null);
-        form.reset();
-        router.refresh();
+        if (response.ok) {
+          setIsEditOpen(false);
+          setSelectedUser(null);
+          form.reset();
+          mutateUsers();
+        }
+      } else {
+        const response = await fetch(`/api/users`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        if (response.ok) {
+          setIsAddOpen(false);
+          form.reset();
+          mutateUsers();
+        }
       }
     } catch (error) {
       console.error(error);
@@ -131,13 +133,12 @@ export default function AdminUsersPage({ users }: { users: PageProps }) {
   const handleDelete = async (id: number) => {
     try {
       const response = await fetch(`/api/users/${id}`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        method: 'DELETE',
       });
       if (response.ok) {
         setIsDeleteOpen(false);
         setSelectedUser(null);
-        router.refresh();
+        mutateUsers();
       }
     } catch (error) {
       console.error(error);
@@ -244,6 +245,10 @@ export default function AdminUsersPage({ users }: { users: PageProps }) {
     </Dialog>
   );
 
+  if (error) {
+    return <div>Error loading users</div>;
+  }
+
   return (
     <AppLayout breadcrumbs={[{ title: "Users", href: "/admin/users" }]}>
       <AdminLayout>
@@ -332,16 +337,4 @@ export default function AdminUsersPage({ users }: { users: PageProps }) {
       </AdminLayout>
     </AppLayout>
   );
-}
-
-export async function getServerSideProps({ params }: any) {
-  const users = await fetch(`http://localhost:3000/api/users`).then((res) =>
-    res.json()
-  );
-
-  return {
-    props: {
-      users,
-    },
-  };
 }

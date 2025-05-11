@@ -28,7 +28,6 @@ import AppLogo from './app-logo';
 import { useSession } from 'next-auth/react';
 
 export function AppSidebar() {
-  // Replace this hook with your real auth/context provider
   const { data: session } = useSession();
 
   const mainNavItems: NavItem[] = useMemo(() => {

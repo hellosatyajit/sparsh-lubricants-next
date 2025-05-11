@@ -1,10 +1,10 @@
 "use client";
 
-import { useRouter } from 'next/navigation';
-import { type BreadcrumbItem } from '../../types';
 import { useEffect, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
+import useSWR from 'swr';
+import { fetcher, swrConfig } from '@/lib/swr';
 
 import { Button } from '../../components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
@@ -14,29 +14,28 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import AdminLayout from '../../layouts/admin-layout';
 import AppLayout from '../../layouts/app-layout';
-import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { z } from 'zod';
 
 export const mailAccountSchema = z.object({
     id: z.number().optional(),
     email: z.string().min(1, 'Mail ID is required'),
     status: z.enum(['Active', 'Inactive']),
-    appCode: z.string().min(8, 'App Code is required'),
+    appCode: z.string().min(8, 'App Code is required').optional(),
 });
 
 export type MailAccount = z.infer<typeof mailAccountSchema>;
 
-interface PageProps {
-    mailAccounts: MailAccount[];
-}
+export default function MailAccounts() {
+    const { data: mailAccountsData, error, mutate: mutateMailAccounts } = useSWR<MailAccount[]>(
+        `/api/mail-accounts`,
+        fetcher,
+        swrConfig
+    );
 
-
-export default function MailAccounts({ mailAccounts }: PageProps) {
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [selectedAccount, setSelectedAccount] = useState<MailAccount | null>(null);
-    const router = useRouter();
 
     const form = useForm<MailAccount>({
         resolver: zodResolver(mailAccountSchema),
@@ -49,7 +48,6 @@ export default function MailAccounts({ mailAccounts }: PageProps) {
 
     console.log(form.formState.errors);
 
-
     useEffect(() => {
         if (isAddOpen) {
             form.reset({ email: '', status: 'Active', appCode: '' });
@@ -57,28 +55,35 @@ export default function MailAccounts({ mailAccounts }: PageProps) {
         }
     }, [isAddOpen]);
 
-    const onSubmit = async (data: any) => {
+    const onSubmit = async (data: MailAccount) => {
         try {
-            let response;
             if (selectedAccount) {
-                response = await fetch(`/api/mail-accounts/${selectedAccount.id}`, {
+                const response = await fetch(`/api/mail-accounts/${selectedAccount.id}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data),
                 });
+                if (response.ok) {
+                    setIsEditOpen(false);
+                    setSelectedAccount(null);
+                    form.reset();
+                    mutateMailAccounts();
+                }
             } else {
-                response = await fetch('/api/mail-accounts', {
+                if (!data.appCode) {
+                    form.setError('appCode', { message: 'App Code is required' });
+                    return;
+                }
+                const response = await fetch(`/api/mail-accounts`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data),
                 });
-            }
-            if (response.ok) {
-                setIsEditOpen(false);
-                setSelectedAccount(null);
-                setIsAddOpen(false);
-                form.reset();
-                router.refresh();
+                if (response.ok) {
+                    setIsAddOpen(false);
+                    form.reset();
+                    mutateMailAccounts();
+                }
             }
         } catch (error) {
             console.error(error);
@@ -99,12 +104,11 @@ export default function MailAccounts({ mailAccounts }: PageProps) {
         try {
             const response = await fetch(`/api/mail-accounts/${id}`, {
                 method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
             });
             if (response.ok) {
                 setIsDeleteOpen(false);
                 setSelectedAccount(null);
-                router.refresh();
+                mutateMailAccounts();
             }
         } catch (error) {
             console.error(error);
@@ -182,6 +186,10 @@ export default function MailAccounts({ mailAccounts }: PageProps) {
         </Dialog>
     );
 
+    if (error) {
+        return <div>Error loading mail accounts</div>;
+    }
+
     return (
         <AppLayout breadcrumbs={[{ title: 'Mail Accounts', href: '/admin/mail-accounts' }]}>
             <AdminLayout>
@@ -197,16 +205,14 @@ export default function MailAccounts({ mailAccounts }: PageProps) {
                                 <TableRow>
                                     <TableHead className="pl-4">Mail ID</TableHead>
                                     <TableHead>Status</TableHead>
-                                    <TableHead>App Code</TableHead>
                                     <TableHead>Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {mailAccounts.map((account) => (
+                                {(mailAccountsData ?? []).map((account) => (
                                     <TableRow key={account.id}>
                                         <TableCell className="pl-4">{account.email}</TableCell>
                                         <TableCell>{account.status}</TableCell>
-                                        <TableCell>{account.appCode}</TableCell>
                                         <TableCell>
                                             <div className="flex gap-2">
                                                 <Button variant="outline" size="sm" onClick={() => handleEdit(account)}>
@@ -253,15 +259,4 @@ export default function MailAccounts({ mailAccounts }: PageProps) {
             </AdminLayout>
         </AppLayout>
     );
-}
-
-export async function getServerSideProps({ query }: any) {
-    const page = query.page || 1;
-    const mailAccounts = await fetch(`http://localhost:3000/api/mail-accounts?page=${page}`).then((res) => res.json());
-
-    return {
-        props: {
-            mailAccounts,
-        },
-    };
 }

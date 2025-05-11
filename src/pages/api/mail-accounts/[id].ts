@@ -29,7 +29,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     case 'DELETE':
       try {
-        await db.delete(mailAccounts)
+        await db.update(mailAccounts)
+          .set({
+            deletedAt: new Date(),
+          })
           .where(eq(mailAccounts.id, id));
 
         res.status(200).json({ message: 'Mail account deleted successfully' });

@@ -152,6 +152,7 @@ export const salesInquiries = mysqlTable('sales_inquiries', {
 export const quotations = mysqlTable("quotations", {
   id: serial("id").primaryKey(),
   clientId: int("client_id").notNull(),
+  inquiryId: int("inquiryId").notNull(),
   createdBy: int("created_by").notNull(),
   expiryDate: date("expiry_date").notNull(),
   totalAmount: decimal("total_amount", { precision: 12, scale: 2 }).notNull(),

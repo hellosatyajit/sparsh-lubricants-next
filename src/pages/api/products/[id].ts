@@ -2,7 +2,7 @@
 
 import { db } from '@/db';
 import { products } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { and, isNull, eq } from 'drizzle-orm';
 import { NextApiRequest, NextApiResponse } from 'next';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -12,7 +12,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   switch (method) {
     case 'GET':
       try {
-        const product = await db.select().from(products).where(eq(products.id, productId));
+        const product = await db.select().from(products).where(and(eq(products.id, productId), isNull(products.deletedAt)));
 
         if (product) {
           res.status(200).json(product);
@@ -46,8 +46,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     case 'DELETE':
       try {
-        // Delete product
-        const deletedProduct = await db.delete(products).where(eq(products.id, productId));
+        const deletedProduct = await db.update(products).set({
+          deletedAt: new Date(),
+        }).where(eq(products.id, productId));
 
         if (deletedProduct.length > 0) {
           res.status(204).end();

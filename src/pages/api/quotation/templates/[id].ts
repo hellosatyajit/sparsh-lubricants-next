@@ -2,7 +2,7 @@
 
 import { db } from '@/db';
 import { products, quotationTemplate, quotationTemplatesProducts } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { NextApiRequest, NextApiResponse } from 'next';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -12,7 +12,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     switch (method) {
         case 'GET':
             try {
-                const quotation = await db.select().from(quotationTemplate).leftJoin(quotationTemplatesProducts, eq(quotationTemplate.id, quotationTemplatesProducts.quotationTemplateId)).where(eq(quotationTemplatesProducts.quotationTemplateId, templateId)).limit(1);
+                const quotation = await db.select().from(quotationTemplate).leftJoin(quotationTemplatesProducts, eq(quotationTemplate.id, quotationTemplatesProducts.quotationTemplateId)).where(and(eq(quotationTemplatesProducts.quotationTemplateId, templateId), isNull(quotationTemplatesProducts.deletedAt))).limit(1);
 
                 const mapped = Object.values(
                     quotation.reduce((acc, { quotation_template, quotation_templates_products }) => {

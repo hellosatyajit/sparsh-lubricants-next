@@ -4,7 +4,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { db } from '@/db';
 import { users } from '@/db/schema';
 import bcrypt from 'bcrypt';
-
+import { isNull } from 'drizzle-orm';
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { method } = req;
 
@@ -17,7 +17,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           name: users.name,
           type: users.type,
           email: users.email,
-        }).from(users);        
+        }).from(users).where(isNull(users.deletedAt));
 
         res.status(200).json({
           data: usersData,

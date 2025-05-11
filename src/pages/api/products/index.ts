@@ -3,6 +3,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { db } from '@/db';
 import { products } from '@/db/schema';
+import { isNull } from 'drizzle-orm';
 
 // Fetch all products with pagination and create a new product
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -15,7 +16,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const offset = (page - 1) * perPage;
 
       try {
-        const productsData = await db.select().from(products).limit(perPage).offset(offset);
+        const productsData = await db.select().from(products).where(isNull(products.deletedAt)).limit(perPage).offset(offset);
         const totalCount = await db.$count(products);
 
         const total = totalCount;

@@ -11,7 +11,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     switch (method) {
         case 'GET':
             try {
-                const productsData = await db.select().from(products);
+                const productsData = await db.select().from(products).where(isNull(products.deletedAt));
                 res.status(200).json(productsData);
             } catch (error) {
                 res.status(500).json({ message: 'Error fetching products' });

@@ -1,28 +1,34 @@
-import { NextApiRequest, NextApiResponse } from 'next';
-import { db } from '@/db';
-import { mailAccounts } from '@/db/schema';
+import { NextApiRequest, NextApiResponse } from "next";
+import { db } from "@/db";
+import { mailAccounts } from "@/db/schema";
+import { isNull } from "drizzle-orm";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   const { method } = req;
 
   switch (method) {
-    case 'GET':
+    case "GET":
       try {
-        const mailAccountsData = await db.select({
-          id: mailAccounts.id,
-          email: mailAccounts.email,
-          status: mailAccounts.status,
-          appCode: mailAccounts.appCode,
-        }).from(mailAccounts);        
+        const mailAccountsData = await db
+          .select({
+            id: mailAccounts.id,
+            email: mailAccounts.email,
+            status: mailAccounts.status,
+          })
+          .from(mailAccounts)
+          .where(isNull(mailAccounts.deletedAt));
 
         res.status(200).json(mailAccountsData);
       } catch (error) {
-        console.error('Error fetching mail accounts:', error);
-        res.status(500).json({ message: 'Error fetching mail accounts' });
+        console.error("Error fetching mail accounts:", error);
+        res.status(500).json({ message: "Error fetching mail accounts" });
       }
       break;
 
-    case 'POST':
+    case "POST":
       try {
         const { email, status, appCode } = req.body;
 
@@ -34,13 +40,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         res.status(201).json(newMailAccount);
       } catch (error) {
-        console.error('Error creating mail account:', error);
-        res.status(500).json({ message: 'Error creating mail account' });
+        console.error("Error creating mail account:", error);
+        res.status(500).json({ message: "Error creating mail account" });
       }
       break;
 
     default:
-      res.status(405).json({ message: 'Method Not Allowed' });
+      res.status(405).json({ message: "Method Not Allowed" });
       break;
   }
-} 
+}
