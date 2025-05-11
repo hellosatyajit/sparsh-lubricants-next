@@ -1,217 +1,156 @@
-'use client';
+import InputError from '@/components/input-error';
+import AppLayout from '@/layouts/app-layout';
+import SettingsLayout from '@/layouts/setting-layout';
+import { type BreadcrumbItem } from '@/types';
+import { Transition } from '@headlessui/react';
+import { useForm, Controller } from 'react-hook-form';
+import { useRef } from 'react';
 
-import Head from 'next/head';
-import { useEffect, useState } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
-import { Button } from '../../components/ui/button';
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
-} from '../../components/ui/dialog';
-import {
-  Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
-} from '../../components/ui/form';
-import { Input } from '../../components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
-import { Textarea } from '../../components/ui/textarea';
-import AppLayout from '../../layouts/app-layout';
-import { Product, productFormSchema } from '../../lib/schema';
-import { BreadcrumbItem } from '../../types';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import type { FieldValues } from 'react-hook-form';
-
-interface PaginatedData<T> {
-  data: T[];
-  current_page: number;
-  last_page: number;
-  per_page: number;
-  total: number;
-  from: number;
-  to: number;
-}
+import HeadingSmall from '@/components/heading-small';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 const breadcrumbs: BreadcrumbItem[] = [
   {
-    title: 'Products',
-    href: '/products',
+    title: 'Password settings',
+    href: '/settings/password',
   },
 ];
 
-export default function ProductsPage() {
-  const [products, setProducts] = useState<PaginatedData<Product> | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [isAddOpen, setIsAddOpen] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+interface FormData {
+  current_password: string;
+  password: string;
+  password_confirmation: string;
+}
 
-  const fetchProducts = async (page = 1) => {
-    const res = await fetch(`/api/products?page=${page}`);
-    const data = await res.json();
-    setProducts(data);
-  };
+export default function Password() {
+  const passwordInput = useRef<HTMLInputElement>(null);
+  const currentPasswordInput = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    fetchProducts(currentPage);
-  }, [currentPage]);
-
-  const form = useForm({
-    resolver: zodResolver(productFormSchema),
+  const { control, handleSubmit, formState: { errors, isSubmitting, isSubmitSuccessful }, reset } = useForm<FormData>({
     defaultValues: {
-      name: '',
-      category: '',
-      description: '',
-      price: 0,
+      current_password: '',
+      password: '',
+      password_confirmation: '',
     },
   });
 
-  useEffect(() => {
-    if (isAddOpen) {
-      form.reset({
-        name: '',
-        category: '',
-        description: '',
-        price: 0,
+  const updatePassword = handleSubmit(async (data) => {
+    try {
+      const response = await fetch(route('password.update'), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
       });
-      setSelectedProduct(null);
-    }
-  }, [isAddOpen]);
 
-  const onSubmit = async (data: any) => {
-    const url = selectedProduct ? `/api/products/${selectedProduct.id}` : '/api/products';
-    const method = selectedProduct ? 'PUT' : 'POST';
-
-    const res = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-
-    if (res.ok) {
-      if (selectedProduct) {
-        setIsEditOpen(false);
+      if (response.ok) {
+        reset();
       } else {
-        setIsAddOpen(false);
+        const errorData = await response.json();
+        if (errorData.errors.password) {
+          reset({ password: '', password_confirmation: '' });
+          passwordInput.current?.focus();
+        }
+
+        if (errorData.errors.current_password) {
+          reset({ current_password: '' });
+          currentPasswordInput.current?.focus();
+        }
       }
-      form.reset();
-      fetchProducts(currentPage);
+    } catch (error) {
+      console.error('Error updating password:', error);
     }
-  };
-
-  const handleEdit = (product: Product) => {
-    setSelectedProduct(product);
-    form.reset(product);
-    setIsEditOpen(true);
-  };
-
-  const handleDelete = async (id: number) => {
-    const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
-    if (res.ok) {
-      setIsDeleteOpen(false);
-      setSelectedProduct(null);
-      fetchProducts(currentPage);
-    }
-  };
-
-  const AddProductDialog = () => (
-    <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-      <DialogTrigger asChild>
-        <Button>Add Product</Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Add New Product</DialogTitle>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* Form Fields same as before */}
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
-  );
-
-  if (!products) return <div>Loading...</div>;
+  });
 
   return (
-    <AppLayout breadcrumbs={breadcrumbs} cta={<AddProductDialog />}>
-      <Head>
-        <title>Products</title>
-      </Head>
-      <div className="mx-auto w-full max-w-7xl p-2 sm:p-6 lg:p-8">
-        <div className="rounded-lg border bg-white">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="pl-4">Name</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead className="max-w-52">Description</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {products.data.map((product) => (
-                <TableRow key={product.id}>
-                  <TableCell className="pl-4">{product.name}</TableCell>
-                  <TableCell>{product.category}</TableCell>
-                  <TableCell className="max-w-52 truncate" title={product.description || ''}>
-                    {product.description}
-                  </TableCell>
-                  <TableCell>${Number(product.price).toFixed(2)}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleEdit(product)}>
-                        Edit
-                      </Button>
-                      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-                        <DialogTrigger asChild>
-                          <Button variant="destructive" size="sm" onClick={() => setSelectedProduct(product)}>
-                            Delete
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Delete Product</DialogTitle>
-                          </DialogHeader>
-                          <p>Are you sure you want to delete this product?</p>
-                          <div className="flex justify-end gap-2">
-                            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancel</Button>
-                            <Button variant="destructive" onClick={() => handleDelete(product.id!)}>Delete</Button>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-        {/* Pagination */}
-        {products.last_page > 1 && (
-          <div className="flex items-center justify-between border-t px-4 py-3">
-            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-              <p className="text-sm text-gray-700">
-                Showing <span className="font-medium">{products.from}</span> to <span className="font-medium">{products.to}</span> of <span className="font-medium">{products.total}</span> results
-              </p>
-              <div className="flex gap-1">
-                <Button variant="outline" size="icon" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}>
-                  <ChevronLeftIcon />
-                </Button>
-                {Array.from({ length: products.last_page }, (_, i) => i + 1).map((page) => (
-                  <Button key={page} variant={page === currentPage ? 'default' : 'outline'} size="icon" onClick={() => setCurrentPage(page)}>
-                    {page}
-                  </Button>
-                ))}
-                <Button variant="outline" size="icon" disabled={currentPage === products.last_page} onClick={() => setCurrentPage((p) => p + 1)}>
-                  <ChevronRightIcon />
-                </Button>
-              </div>
+    <AppLayout breadcrumbs={breadcrumbs}>
+      <SettingsLayout>
+        <div className="space-y-6">
+          <HeadingSmall title="Update password" description="Ensure your account is using a long, random password to stay secure" />
+
+          <form onSubmit={updatePassword} className="space-y-6">
+            <div className="grid gap-2">
+              <Label htmlFor="current_password">Current password</Label>
+
+              <Controller
+                name="current_password"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    id="current_password"
+                    ref={currentPasswordInput}
+                    type="password"
+                    className="mt-1 block w-full"
+                    autoComplete="current-password"
+                    placeholder="Current password"
+                  />
+                )}
+              />
+
+              <InputError message={errors.current_password?.message} />
             </div>
-          </div>
-        )}
-      </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="password">New password</Label>
+
+              <Controller
+                name="password"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    id="password"
+                    ref={passwordInput}
+                    type="password"
+                    className="mt-1 block w-full"
+                    autoComplete="new-password"
+                    placeholder="New password"
+                  />
+                )}
+              />
+
+              <InputError message={errors.password?.message} />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="password_confirmation">Confirm password</Label>
+
+              <Controller
+                name="password_confirmation"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    id="password_confirmation"
+                    type="password"
+                    className="mt-1 block w-full"
+                    autoComplete="new-password"
+                    placeholder="Confirm password"
+                  />
+                )}
+              />
+
+              <InputError message={errors.password_confirmation?.message} />
+            </div>
+
+            <div className="flex items-center gap-4">
+              <Button disabled={isSubmitting}>Save password</Button>
+
+              <Transition
+                show={isSubmitSuccessful}
+                enter="transition ease-in-out"
+                enterFrom="opacity-0"
+                leave="transition ease-in-out"
+                leaveTo="opacity-0"
+              >
+                <p className="text-sm text-neutral-600">Saved</p>
+              </Transition>
+            </div>
+          </form>
+        </div>
+      </SettingsLayout>
     </AppLayout>
   );
 }

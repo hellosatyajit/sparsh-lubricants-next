@@ -1,7 +1,13 @@
+'use client';
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function Admin() {
     const router = useRouter();
-    router.push("/admin/users");
+    
+    useEffect(() => {
+        router.push("/admin/users");
+    }, [router]);
+
     return null;
 }

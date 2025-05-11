@@ -148,13 +148,6 @@ export default function ProfilePage() {
                 )}
               />
 
-              {session?.user?.emailVerified === false && (
-                <div className="rounded-md bg-yellow-50 p-4 text-sm text-yellow-700">
-                  Your email address is unverified. Please check your email for a
-                  verification link.
-                </div>
-              )}
-
               <div className="flex items-center gap-4">
                 <Button type="submit" disabled={isSaving}>
                   {isSaving ? 'Saving...' : 'Save changes'}
