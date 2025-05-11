@@ -2,7 +2,6 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
-import Head from "next/head";
 import { Button } from "../../components/ui/button";
 import {
     Dialog,
@@ -40,12 +39,11 @@ import {
 import AppLayout from "../../layouts/app-layout";
 import { BreadcrumbItem } from "../../types";
 import { ChevronLeftIcon, ChevronRightIcon, Loader2, RefreshCw } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useSession } from "next-auth/react";
 import { Badge } from "../../components/ui/badge";
-import { Card } from "../../components/ui/card";
 import useSWR from 'swr';
 import { fetcher, swrConfig } from '@/lib/swr';
 

@@ -1,42 +1,10 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
 import Head from "next/head";
 import { Button } from "../../components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "../../components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "../../components/ui/form";
-import { Input } from "../../components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "../../components/ui/table";
-import { Textarea } from "../../components/ui/textarea";
 import AppLayout from "../../layouts/app-layout";
 import { BreadcrumbItem } from "../../types";
-import { ChevronLeftIcon, ChevronRightIcon, TrashIcon, User } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
 import { z } from "zod";
-import useSWR from 'swr';
-import { fetcher, swrConfig } from '@/lib/swr';
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 
@@ -52,8 +20,6 @@ const quotationTemplateSchema = z.object({
     })
   ),
 });
-
-type QuotationTemplate = z.infer<typeof quotationTemplateSchema>;
 
 const breadcrumbs: BreadcrumbItem[] = [
   {

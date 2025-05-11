@@ -1,7 +1,6 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
 import Head from "next/head";
 import { Button } from "../../components/ui/button";
 import {
@@ -28,15 +27,14 @@ import {
   TableHeader,
   TableRow,
 } from "../../components/ui/table";
-import { Textarea } from "../../components/ui/textarea";
-import AppLayout from "../../layouts/app-layout";
-import { BreadcrumbItem } from "../../types";
-import { ChevronLeftIcon, ChevronRightIcon, TrashIcon } from "lucide-react";
+import { TrashIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import useSWR from 'swr';
 import { fetcher, swrConfig } from '@/lib/swr';
+import { BreadcrumbItem } from "@/types";
+import AppLayout from "@/layouts/app-layout";
 
 const quotationTemplateSchema = z.object({
   id: z.number().optional(),

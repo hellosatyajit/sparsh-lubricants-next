@@ -1,11 +1,8 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { db } from "@/db";
 import { salesInquiries } from "@/db/schema";
-import { getServerSession } from "next-auth";
-import authOptions from "../auth/[...nextauth]";
-import { eq } from "drizzle-orm";
-import { Session } from "next-auth";
 import { getToken } from "next-auth/jwt";
+import { eq } from "drizzle-orm";
 
 export default async function handler(
   req: NextApiRequest,

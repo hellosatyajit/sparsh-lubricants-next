@@ -1,7 +1,6 @@
 import { analyzeEmailContent, OtherMessageResponse, SalesInquiryResponse } from './deepseekAPI';
 import { db } from '../../db';
 import { salesInquiries, otherMessages } from '../../db/schema';
-import { is } from 'drizzle-orm';
 
 export async function classifyEmailContent(emailObject: any) {
     try {

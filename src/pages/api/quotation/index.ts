@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { db } from "@/db";
-import { quotations, salesInquiries } from "@/db/schema";
+import { quotations } from "@/db/schema";
 import { getToken } from "next-auth/jwt";
 import { and, desc, eq, isNull } from "drizzle-orm";
 

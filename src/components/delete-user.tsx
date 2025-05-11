@@ -51,6 +51,7 @@ export default function DeleteUser() {
         window.location.href = '/goodbye';
       }
     } catch (err) {
+      console.error(err);
       setError('Something went wrong.');
       passwordInput.current?.focus();
     } finally {

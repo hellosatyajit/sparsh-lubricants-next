@@ -1,7 +1,6 @@
 import { db } from '@/db';
 import { mailAccounts, otherMessages, salesInquiries } from '@/db/schema';
 import { eq, inArray } from 'drizzle-orm';
-import { simpleParser } from 'mailparser';
 import imaps from 'imap-simple';
 import { subHours } from 'date-fns';
 import { NextApiRequest, NextApiResponse } from 'next';
@@ -14,7 +13,7 @@ const getEmailsFromAccount = async ({ email, appCode }: { email: string, appCode
         imap: {
             user: email,
             password: appCode,
-            host: 'imap.gmail.com', // Adjust as per provider
+            host: 'imap.gmail.com',
             port: 993,
             tls: true,
             tlsOptions: {

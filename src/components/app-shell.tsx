@@ -2,11 +2,10 @@
 
 import { SidebarProvider } from './ui/sidebar';
 import { useState, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
 
 interface AppShellProps {
     children: React.ReactNode;
-    defaultOpen?: boolean; // Now passed as prop instead of from Inertia
+    defaultOpen?: boolean;
 }
 
 export function AppShell({ children, defaultOpen = true }: AppShellProps) {

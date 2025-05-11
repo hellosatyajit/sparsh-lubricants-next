@@ -105,7 +105,7 @@ export default function Products() {
       });
       setSelectedProduct(null);
     }
-  }, [isAddOpen]);
+  }, [isAddOpen, form]);
 
   const onSubmit = async (data: Product) => {
     try {

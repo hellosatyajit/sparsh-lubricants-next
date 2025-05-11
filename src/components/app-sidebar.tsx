@@ -41,7 +41,6 @@ export function AppSidebar() {
       { title: 'Payments', href: '/payments', icon: CreditCard },
     ];
 
-    // @ts-ignore
     if (session?.user?.type === 'Admin') {
       items.push({
         title: 'Admin',
