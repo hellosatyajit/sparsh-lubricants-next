@@ -266,7 +266,7 @@ export default function Inquiries() {
                         </TableBody>
                     </Table>
                 </div>
-
+                
                 {inquiries.last_page > 1 && (
                     <div className="flex items-center justify-between border-t px-4 py-3">
                         <div>
