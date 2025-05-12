@@ -25,7 +25,7 @@ export const authProviders = [
           }
 
           const isMatch = await bcrypt.compare(password, user[0].password);
-          console.log(isMatch);
+          
           if (!isMatch) {
             return null;
           }

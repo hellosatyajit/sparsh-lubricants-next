@@ -2,11 +2,14 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { db } from "@/db";
 import { salesInquiries } from "@/db/schema";
 import { getToken } from "next-auth/jwt";
-import { desc, eq } from "drizzle-orm";
+import { count, desc, eq } from "drizzle-orm";
 
 const ITEMS_PER_PAGE = 10;
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   const { method } = req;
   const session = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
@@ -20,34 +23,42 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   switch (method) {
     case "GET":
       try {
-        const baseQuery = session.type !== "Admin"
-          ? db.select().from(salesInquiries)
-          : db.select().from(salesInquiries).where(
-            eq(salesInquiries.assignedTo, parseInt(session.id))
-          );
+        const baseQuery =
+          session.type === "Admin"
+            ? db.select({ count: count() }).from(salesInquiries)
+            : db
+                .select({ count: count() })
+                .from(salesInquiries)
+                .where(eq(salesInquiries.assignedTo, parseInt(session.id)));
 
         const totalItems = await baseQuery.execute();
 
-        const paginatedQuery = session.type === "Admin"
-          ? db.select().from(salesInquiries).limit(ITEMS_PER_PAGE).offset(offset).orderBy(desc(salesInquiries.emailDate))
-          : db
-            .select()
-            .from(salesInquiries)
-            .where(eq(salesInquiries.assignedTo, parseInt(session.id)))
-            .limit(ITEMS_PER_PAGE)
-            .offset(offset)
-            .orderBy(desc(salesInquiries.emailDate));
+        const paginatedQuery =
+          session.type === "Admin"
+            ? db
+                .select()
+                .from(salesInquiries)
+                .limit(ITEMS_PER_PAGE)
+                .offset(offset)
+                .orderBy(desc(salesInquiries.emailDate))
+            : db
+                .select()
+                .from(salesInquiries)
+                .where(eq(salesInquiries.assignedTo, parseInt(session.id)))
+                .limit(ITEMS_PER_PAGE)
+                .offset(offset)
+                .orderBy(desc(salesInquiries.emailDate));
 
         const items = await paginatedQuery.execute();
 
-        const totalPages = Math.ceil(totalItems.length / ITEMS_PER_PAGE);
+        const totalPages = Math.ceil(totalItems[0].count / ITEMS_PER_PAGE);
 
         res.status(200).json({
           data: items,
           current_page: page,
           last_page: totalPages,
           per_page: ITEMS_PER_PAGE,
-          total: totalItems.length,
+          total: totalItems[0].count,
           from: offset + 1,
           to: offset + items.length,
         });

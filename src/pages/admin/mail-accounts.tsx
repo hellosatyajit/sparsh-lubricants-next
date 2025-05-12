@@ -46,8 +46,6 @@ export default function MailAccounts() {
         },
     });
 
-    console.log(form.formState.errors);
-
     useEffect(() => {
         if (isAddOpen) {
             form.reset({ email: '', status: 'Active', appCode: '' });
