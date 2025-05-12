@@ -50,11 +50,11 @@ import { fetcher, swrConfig } from '@/lib/swr';
 const inquirySchema = z.object({
     id: z.number().optional(),
     messageId: z.string().optional(),
-    senderEmail: z.string().email("Invalid email"),
-    senderName: z.string().min(1, "Sender name is required"),
+    senderEmail: z.string().email("Invalid email").optional(),
+    senderName: z.string().min(1, "Sender name is required").optional(),
     companyName: z.string().optional(),
     mobileNumber: z.string().optional(),
-    emailSubject: z.string().min(1, "Subject is required"),
+    emailSubject: z.string().min(1, "Subject is required").optional(),
     emailSummary: z.string().optional(),
     extractedJson: z.string().optional(),
     emailRaw: z.string().optional(),
@@ -74,11 +74,6 @@ interface PaginatedData<T> {
     total: number;
     from: number;
     to: number;
-}
-
-interface Props {
-    inquiries: PaginatedData<Inquiry>;
-    users: { id: number; name: string }[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -122,11 +117,11 @@ export default function Inquiries() {
         },
     });
 
-    const onSubmit = async (data: Inquiry) => {
+    const onSubmit = async (data: Inquiry) => {        
         try {
             setIsLoading(true);
             const response = await fetch(`/api/inquiries/${selectedInquiry?.id}`, {
-                method: 'PUT',
+                method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
             });

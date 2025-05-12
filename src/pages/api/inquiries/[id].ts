@@ -48,7 +48,6 @@ export default async function handler(
           .update(salesInquiries)
           .set({
             ...body,
-            emailDate: body.emailDate ? new Date(body.emailDate) : null,
           })
           .where(eq(salesInquiries.id, inquiryId));
 
